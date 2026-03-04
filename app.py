@@ -4,7 +4,7 @@ import numpy as np
 import streamlit as st
 import requests
 
-# --- 1. MANUEL İNDİKATÖR HESAPLAMALARI ---
+# --- 1. MANUEL İNDİKATÖR MOTORU ---
 def calculate_rsi(series, period=14):
     if len(series) < period: return pd.Series([50] * len(series))
     delta = series.diff()
@@ -23,14 +23,21 @@ def calculate_mfi(df, period=14):
     neg_mf = mf.where(tp < tp.shift(1), 0).rolling(window=period).sum()
     return 100 - (100 / (1 + (pos_mf / neg_mf)))
 
-# --- 2. ANA ARAYÜZ ---
+# --- 2. ANA ARAYÜZ VE SİDEBAR ---
 st.set_page_config(page_title="Titan V38 Sovereign", layout="wide")
 st.title("🔱 Titan V38: Sovereign Terminal")
 
+# TELEGRAM KUTUCUKLARI BURADA OLMALI
 st.sidebar.header("⚙️ Operasyon Merkezi")
 kasa = st.sidebar.number_input("Sanal Portföy (TL)", value=100000, step=1000)
 
-WATCHLIST = [ "ACSEL.IS", "AHSGY.IS", "AKFYE.IS", "AKHAN.IS", "AKSA.IS", "AKYHO.IS", "ALBRK.IS", "ALCTL.IS", "ALKA.IS", "ALKIM.IS",
+st.sidebar.subheader("📱 Telegram Bağlantısı")
+tg_token = st.sidebar.text_input("Telegram Token", type="password", help="BotFather'dan aldığınız kod")
+tg_id = st.sidebar.text_input("Telegram ID", type="password", help="UserinfoBot'tan aldığınız ID")
+
+# --- 3. WATCHLIST ---
+WATCHLIST = [
+    "ACSEL.IS", "AHSGY.IS", "AKFYE.IS", "AKHAN.IS", "AKSA.IS", "AKYHO.IS", "ALBRK.IS", "ALCTL.IS", "ALKA.IS", "ALKIM.IS",
     "ALKLC.IS", "ALTNY.IS", "ALVES.IS", "ANGEN.IS", "ARASE.IS", "ARDYZ.IS", "ARFYE.IS", "ASELS.IS", "ATAKP.IS", "ATATP.IS",
     "AVPGY.IS", "AYEN.IS", "BAHKM.IS", "BAKAB.IS", "BANVT.IS", "BASGZ.IS", "BEGYO.IS", "BERA.IS", "BIENY.IS", "BIMAS.IS",
     "BINBN.IS", "BINHO.IS", "BMSTL.IS", "BNTAS.IS", "BORSK.IS", "BOSSA.IS", "BRISA.IS", "BRKSN.IS", "BRLSM.IS", "BSOKE.IS",
@@ -54,20 +61,20 @@ WATCHLIST = [ "ACSEL.IS", "AHSGY.IS", "AKFYE.IS", "AKHAN.IS", "AKSA.IS", "AKYHO.
     "VRGYO.IS", "YATAS.IS", "YEOTK.IS", "YUNSA.IS", "ZEDUR.IS", "ZERGY.IS", "AGROT.IS", "ALFAS.IS", "ENERY.IS", "KMPUR.IS"
 ]
 
-if st.button("🚀 Piyasayı Tek Seferde Tara"):
-    with st.spinner("Toplu veri paketi indiriliyor..."):
+# --- 4. ÇALIŞTIRMA VE ANALİZ ---
+if st.button("🚀 Piyasayı Tara ve Sinyal Gönder"):
+    with st.spinner("Toplu veri analiz ediliyor..."):
         try:
-            # TÜM VERİYİ TEK SEFERDE İNDİRİYORUZ (Yahoo'yu yormayan yöntem)
             data_d = yf.download(WATCHLIST, period="6mo", interval="1d", group_by='ticker', progress=False, auto_adjust=True)
             data_h = yf.download(WATCHLIST, period="1mo", interval="1h", group_by='ticker', progress=False, auto_adjust=True)
             
             results = []
+            kral_sinyaller = []
+            
             for ticker in WATCHLIST:
                 try:
-                    # Günlük ve Saatlik Verileri Ayıkla
                     df_d = data_d[ticker].dropna()
                     df_h = data_h[ticker].dropna()
-                    
                     if len(df_d) < 20: continue
                     
                     c = df_d['Close']
@@ -83,27 +90,35 @@ if st.button("🚀 Piyasayı Tek Seferde Tara"):
                     
                     entry = float(c.iloc[-1])
                     stop = entry - (volatility * 1.5)
-                    target = entry + (volatility * 3)
                     risk_per_share = entry - stop
                     lot = int((kasa * 0.01) / risk_per_share) if risk_per_share > 0 else 0
                     
-                    results.append({
+                    res = {
                         "Hisse": ticker.replace(".IS",""),
                         "Skor": int(score),
                         "Fiyat": round(entry, 2),
                         "Stop": round(stop, 2),
-                        "Hedef": round(target, 2),
                         "Lot": lot,
                         "Durum": "🔱 KRAL" if score >= 85 else "🚀 AL" if score >= 65 else "⌛ İZLE"
-                    })
+                    }
+                    results.append(res)
+                    if res["Durum"] == "🔱 KRAL":
+                        kral_sinyaller.append(res)
                 except: continue
             
             if results:
                 res_df = pd.DataFrame(results).sort_values("Skor", ascending=False)
-                st.subheader("🎯 Güncel Sinyal Tablosu")
                 st.dataframe(res_df, use_container_width=True)
+                
+                # TELEGRAM GÖNDERİMİ
+                if tg_token and tg_id and kral_sinyaller:
+                    st.info(f"📱 {len(kral_sinyaller)} adet KRAL sinyali Telegram'a gönderiliyor...")
+                    for s in kral_sinyaller:
+                        msg = f"🔱 *KRAL SİNYAL*\n#{s['Hisse']}\nFiyat: {s['Fiyat']}\nStop: {s['Stop']}\nLot: {s['Lot']}"
+                        requests.post(f"https://api.telegram.org/bot{tg_token}/sendMessage", data={"chat_id": tg_id, "text": msg, "parse_mode": "Markdown"})
+                    st.success("✅ Telegram mesajları başarıyla gönderildi!")
             else:
-                st.warning("Veri işlenemedi. Piyasalar kapalı olabilir veya Yahoo geçici olarak kapalıdır.")
+                st.warning("Veri çekilemedi.")
                 
         except Exception as e:
-            st.error(f"Sistem Hatası: {e}")
+            st.error(f"Hata: {e}")
