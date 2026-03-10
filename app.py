@@ -99,7 +99,7 @@ def robust_yf_download(
                 if not df.empty:
                     results[t] = df
                     downloaded += 1
-             except:
+        except:
                 continue
                 break # Başarılıysa retry'dan çık
             except Exception as e:
