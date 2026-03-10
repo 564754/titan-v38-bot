@@ -108,7 +108,7 @@ def robust_yf_download(
                     except Exception as e: # <--- Bu satır 'try: raw = yf.download' ile aynı hizada olmalı
                      if attempt == max_retries  - 1:
                      failed_tickers.extend(chunk)
-                time.sleep(wait_seconds)
+                     time.sleep(wait_seconds)
                 
     st.sidebar.write(f"✅ Toplam {downloaded} hisse verisi işlendi.")
     return results
