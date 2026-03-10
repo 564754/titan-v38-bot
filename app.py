@@ -80,31 +80,27 @@ def robust_yf_download(
 
     for i in range(0, len(tickers), chunk_size):
         chunk = tickers[i : i + chunk_size]
+        failed_tickers = []
+        
         for attempt in range(max_retries):
             try:
-                raw = yf.download(
-                    tickers=chunk,
-                    period=period,
-                    interval=interval,
-                    group_by="ticker", # Veriyi ticker bazlı grupla
-                    auto_adjust=True,
-                    session=session,
-                    progress=False,
-                )
-                
-                for t in chunk:
-                    # Yeni yfinance yapısında veriyi çekme mantığı (Kritik Nokta)
-                    try:
-                        if len(chunk) > 1:
-                            df = raw[t].dropna(how="all")
-                        else:
-                            df = raw.dropna(how="all")
-                        
-                        if not df.empty and len(df) > 20:
-                            results[t] = df
-                            downloaded += 1
-                    except:
-                        continue
+                # ... indirme kodları ...
+                break
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    failed_tickers.extend(chunk)
+                time.sleep(wait_seconds)
+
+        # BU SATIRIN HİZASINA DİKKAT: 'for attempt' ile AYNI HİZADA OLMALI
+        for t in list(set(failed_tickers)):
+            try:
+                tkr = yf.Ticker(t, session=session)
+                df = tkr.history(period=period, interval=interval, auto_adjust=True)
+                if not df.empty:
+                    results[t] = df
+                    downloaded += 1
+            except:
+                continue
                 break # Başarılıysa retry'dan çık
             except Exception as e:
                 time.sleep(wait_seconds)
