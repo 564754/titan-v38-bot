@@ -8,7 +8,6 @@ import yfinance as yf
 import time
 from typing import Dict, List, Tuple, Any
 import warnings
-
 warnings.filterwarnings('ignore')
 
 # 🔥 230 BİST KATILIM LİSTESİ (senin XKTUM 230 listesini buraya koy,
