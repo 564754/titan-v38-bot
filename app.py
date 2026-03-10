@@ -108,7 +108,7 @@ def robust_yf_download(
     st.sidebar.write(f"✅ Toplam {downloaded} hisse verisi işlendi.")
     return results
 
-        for t in list(set(failed_tickers)):
+    for t in list(set(failed_tickers)):
             try:
                 tkr = yf.Ticker(t, session=session)
                 df = tkr.history(period=period, interval=interval, auto_adjust=True)
