@@ -1,13 +1,12 @@
 import streamlit as st
 import pandas as pd
-from typing import Any 
 import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
 import yfinance as yf
 import time
-from typing import Dict, List
+from typing import Dict, List, Tuple, Any  # Any’i import edin
 import warnings
 
 warnings.filterwarnings('ignore')
