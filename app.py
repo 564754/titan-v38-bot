@@ -73,7 +73,7 @@ def robust_yf_download(
     tickers: List[str], period: str = "2y", interval: str = "1d",
     chunk_size: int = 20, wait_seconds: float = 15, max_retries: int = 5
 ) -> Dict[str, pd.DataFrame]:
-    session = yf.session.Session()
+    session = requests.Session()
     results = {}
     downloaded = 0
 
