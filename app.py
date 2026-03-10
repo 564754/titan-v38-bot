@@ -270,5 +270,6 @@ class TitanV49Pro:
             "al_score": al_score,
             "order_flow": of["signal"],
             "atr": atr,
-            "price": price
+            "price": price,
+            }
             
