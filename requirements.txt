@@ -1,4 +1,6 @@
 streamlit
+yfinance>=0.2.54
 pandas
-ta
-requests
+numpy
+plotly
+TA-Lib
