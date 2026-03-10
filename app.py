@@ -93,7 +93,7 @@ def robust_yf_download(
 
         # BU SATIRIN HİZASINA DİKKAT: 'for attempt' ile AYNI HİZADA OLMALI
         for t in chunk:
-                  try:
+                    try:
                         if isinstance(raw.columns, pd.MultiIndex):
                             df = raw[t].dropna(how="all")
                         else:
@@ -102,9 +102,9 @@ def robust_yf_download(
                         if not df.empty:
                             results[t] = df
                             downloaded += 1
-                    except: # <--- Bu satır tam olarak 'try' ile aynı hizada olmalı
+                    except:
                         failed_tickers.append(t)
-                        break  # Başarılıysa retry'dan çık
+                break
                     except Exception as e:
                         if attempt == max_retries - 1:
                             failed_tickers.extend(chunk)  # <-- Bu satır 'if'den tam 4 boşluk içeride olmalı
