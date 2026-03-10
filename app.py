@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import requests  # <--- BURAYA EKLE
+import requests
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
@@ -73,57 +73,45 @@ def robust_yf_download(
     tickers: List[str], period: str = "2y", interval: str = "1d",
     chunk_size: int = 20, wait_seconds: float = 15, max_retries: int = 5
 ) -> Dict[str, pd.DataFrame]:
-    import requests
-    session = requests.Session() # Session hatası burada çözüldü
+    session = requests.Session()
     results = {}
     downloaded = 0
 
     for i in range(0, len(tickers), chunk_size):
         chunk = tickers[i : i + chunk_size]
-        failed_tickers = []
+        raw = None
         
         for attempt in range(max_retries):
             try:
-                # ... indirme kodları ...
-                break
-            except Exception as e:
-                if attempt == max_retries - 1:
-                    failed_tickers.extend(chunk)
+                raw = yf.download(
+                    tickers=chunk,
+                    period=period,
+                    interval=interval,
+                    group_by="ticker",
+                    auto_adjust=True,
+                    session=session,
+                    progress=False
+                )
+                if raw is not None and not raw.empty:
+                    break
+            except Exception:
                 time.sleep(wait_seconds)
 
-        # BU SATIRIN HİZASINA DİKKAT: 'for attempt' ile AYNI HİZADA OLMALI
-        for t in chunk:
-                    try:
-                        if isinstance(raw.columns, pd.MultiIndex):
-                            df = raw[t].dropna(how="all")
-                        else:
-                            df = raw.dropna(how="all")
-                        
-                        if not df.empty:
-                            results[t] = df
-                            downloaded += 1
-                    except:
-                        failed_tickers.append(t)
-        break
-                    except Exception as e:
-                        if attempt == max_retries - 1:
-                            failed_tickers.extend(chunk)  # <-- Bu satır 'if'den tam 4 boşluk içeride olmalı
-                        time.sleep(wait_seconds)         # <-- Bu satır 'if' ile aynı hizada olmalı
+        if raw is not None and not raw.empty:
+            for t in chunk:
+                try:
+                    if len(chunk) > 1:
+                        df = raw[t].dropna(how="all")
+                    else:
+                        df = raw.dropna(how="all")
+                    
+                    if not df.empty:
+                        results[t] = df
+                        downloaded += 1
+                except:
+                    continue
                 
     st.sidebar.write(f"✅ Toplam {downloaded} hisse verisi işlendi.")
-    return results
-
-    for t in list(set(failed_tickers)):
-            try:
-                tkr = yf.Ticker(t, session=session)
-                df = tkr.history(period=period, interval=interval, auto_adjust=True)
-                if not df.empty:
-                    results[t] = df
-                    downloaded += 1
-            except:
-                continue
-                
-    st.write(f"BİST indirme bitti: {downloaded}/{len(tickers)}")
     return results
 
 class Portfolio:
@@ -137,22 +125,19 @@ class Portfolio:
         sign = 1 if side == "buy" else -1
         cost = sign * qty * price * 1.001
         self.cash -= cost
-
         if side == "buy":
             if ticker not in self.positions:
                 self.positions[ticker] = {"qty": 0, "avg_price": 0.0}
-            old_qty = self.positions[ticker]["qty"]
-            old_avg = self.positions[ticker]["avg_price"]
-            new_qty = old_qty + qty
-            if new_qty > 0:
-                self.positions[ticker] = {"qty": new_qty, "avg_price": (old_qty * old_avg + qty * price) / new_qty}
+            pos = self.positions[ticker]
+            new_qty = pos["qty"] + qty
+            pos["avg_price"] = (pos["qty"] * pos["avg_price"] + qty * price) / new_qty
+            pos["qty"] = new_qty
         else:
             if ticker in self.positions:
                 if qty >= self.positions[ticker]["qty"]:
-                    self.positions.pop(ticker, None)
+                    self.positions.pop(ticker)
                 else:
                     self.positions[ticker]["qty"] -= qty
-
         self.trades.append({"ticker": ticker, "qty": qty, "price": price, "side": side, "timestamp": timestamp, "cost": cost})
 
     def update_equity(self, timestamp: Any, prices: pd.Series):
@@ -195,7 +180,6 @@ class TitanV49Pro:
         absorption = (df["Volume"].rolling(5).mean() / (body_size * 1000 + 1e-6)).iloc[-1]
         vol_trend = df["Volume"].tail(10).mean() / max(df["Volume"].tail(20).mean(), 1e-6)
         vol_div = vol_trend > 1.2 and (df["Close"].iloc[-1] > df["Close"].iloc[-10])
-        
         score = 30 if vol_div and absorption > 1.5 else 15
         return {"net_delta": net_delta, "absorption": absorption > 1.5, "volume_divergence": vol_div, "order_flow_score": score, "signal": "🟢 BULLISH" if net_delta > 0 else "🔴 BEARISH"}
 
@@ -205,21 +189,16 @@ class TitanV49Pro:
         rsi_series = self.calculate_rsi(df["Close"])
         rsi_l = rsi_series.iloc[-1]
         of = self.order_flow_analysis(df)
-        
         al_score = 0
         if params["RSI_BAND"][0] <= rsi_l <= params["RSI_BAND"][1]: al_score += 25
         al_score += of["order_flow_score"]
         if of["net_delta"] > 0: al_score += 15
         if of["volume_divergence"] and of["absorption"]: al_score += 15
-
         return {"sektor": sektor, "rsi": rsi_l, "al_score": al_score, "order_flow": of["signal"], "atr": self.calculate_atr(df), "price": df["Close"].iloc[-1]}
-# ============================ STREAMLIT ARAYÜZÜ (MARŞA BASAN KISIM) =========================
 
-# --- BURADAN İTİBAREN KODUN EN SONUNA YAPIŞTIRIN (EN SOLA YASLI) ---
 def run_app():
     st.set_page_config(layout="wide", page_title="Titan V49 Pro")
     st.title("🔱 Titan V49 Pro: Sektörel Tarama")
-    
     titan = TitanV49Pro()
     
     if st.sidebar.button("🚀 230 HİSSEYİ TARAMAYA BAŞLAT"):
@@ -229,14 +208,16 @@ def run_app():
         if all_data:
             results = []
             p_bar = st.progress(0)
+            total = len(all_data)
             for idx, (ticker, df) in enumerate(all_data.items()):
                 try:
-                    res = titan.sector_optimized_scoring(df, ticker)
-                    res["Ticker"] = ticker
-                    results.append(res)
+                    if len(df) > 20:
+                        res = titan.sector_optimized_scoring(df, ticker)
+                        res["Ticker"] = ticker
+                        results.append(res)
                 except:
                     continue
-                p_bar.progress((idx + 1) / len(all_data))
+                p_bar.progress((idx + 1) / total)
             
             if results:
                 st.subheader("📊 Analiz Sonuçları")
