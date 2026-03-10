@@ -93,7 +93,7 @@ def robust_yf_download(
 
         # BU SATIRIN HİZASINA DİKKAT: 'for attempt' ile AYNI HİZADA OLMALI
         for t in chunk:
-                    try:
+                  try:
                         if isinstance(raw.columns, pd.MultiIndex):
                             df = raw[t].dropna(how="all")
                         else:
