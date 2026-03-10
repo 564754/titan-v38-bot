@@ -104,7 +104,7 @@ def robust_yf_download(
                             downloaded += 1
                     except: # <--- Bu satır tam olarak 'try' ile aynı hizada olmalı
                         failed_tickers.append(t)
-         break  # Başarılıysa retry'dan çık
+            break  # Başarılıysa retry'dan çık
             except Exception as e: # <--- Bu satır 'try: raw = yf.download' ile aynı hizada olmalı
                 if attempt == max_retries  - 1:
                     failed_tickers.extend(chunk)
