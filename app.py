@@ -73,41 +73,44 @@ def robust_yf_download(
     tickers: List[str], period: str = "2y", interval: str = "1d",
     chunk_size: int = 20, wait_seconds: float = 15, max_retries: int = 5
 ) -> Dict[str, pd.DataFrame]:
-    session = requests.Session()
+    import requests
+    session = requests.Session() # Session hatası burada çözüldü
     results = {}
     downloaded = 0
 
     for i in range(0, len(tickers), chunk_size):
         chunk = tickers[i : i + chunk_size]
-        failed_tickers = []
         for attempt in range(max_retries):
             try:
                 raw = yf.download(
                     tickers=chunk,
                     period=period,
                     interval=interval,
-                    group_by="ticker",
-                    threads=True,
+                    group_by="ticker", # Veriyi ticker bazlı grupla
                     auto_adjust=True,
                     session=session,
                     progress=False,
                 )
+                
                 for t in chunk:
+                    # Yeni yfinance yapısında veriyi çekme mantığı (Kritik Nokta)
                     try:
-                        if isinstance(raw.columns, pd.MultiIndex):
+                        if len(chunk) > 1:
                             df = raw[t].dropna(how="all")
                         else:
                             df = raw.dropna(how="all")
-                        if not df.empty:
+                        
+                        if not df.empty and len(df) > 20:
                             results[t] = df
                             downloaded += 1
                     except:
-                        failed_tickers.append(t)
-                break
+                        continue
+                break # Başarılıysa retry'dan çık
             except Exception as e:
-                if attempt == max_retries - 1:
-                    failed_tickers.extend(chunk)
                 time.sleep(wait_seconds)
+                
+    st.sidebar.write(f"✅ Toplam {downloaded} hisse verisi işlendi.")
+    return results
 
         for t in list(set(failed_tickers)):
             try:
