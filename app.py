@@ -92,17 +92,22 @@ def robust_yf_download(
                 time.sleep(wait_seconds)
 
         # BU SATIRIN HİZASINA DİKKAT: 'for attempt' ile AYNI HİZADA OLMALI
-        for t in list(set(failed_tickers)):
-            try:
-                tkr = yf.Ticker(t, session=session)
-                df = tkr.history(period=period, interval=interval, auto_adjust=True)
-                if not df.empty:
-                    results[t] = df
-                    downloaded += 1
-                except:
-                continue
-                break # Başarılıysa retry'dan çık
-            except Exception as e:
+        for t in chunk:
+                    try:
+                        if isinstance(raw.columns, pd.MultiIndex):
+                            df = raw[t].dropna(how="all")
+                        else:
+                            df = raw.dropna(how="all")
+                        
+                        if not df.empty:
+                            results[t] = df
+                            downloaded += 1
+                    except: # <--- Bu satır tam olarak 'try' ile aynı hizada olmalı
+                        failed_tickers.append(t)
+                break  # Başarılıysa retry'dan çık
+            except Exception as e: # <--- Bu satır 'try: raw = yf.download' ile aynı hizada olmalı
+                if attempt == max_retries - 1:
+                    failed_tickers.extend(chunk)
                 time.sleep(wait_seconds)
                 
     st.sidebar.write(f"✅ Toplam {downloaded} hisse verisi işlendi.")
