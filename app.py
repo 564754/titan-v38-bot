@@ -210,51 +210,34 @@ class TitanV49Pro:
         return {"sektor": sektor, "rsi": rsi_l, "al_score": al_score, "order_flow": of["signal"], "atr": self.calculate_atr(df), "price": df["Close"].iloc[-1]}
 # ============================ STREAMLIT ARAYÜZÜ (MARŞA BASAN KISIM) =========================
 
+# --- BURADAN İTİBAREN KODUN EN SONUNA YAPIŞTIRIN (EN SOLA YASLI) ---
 def run_app():
     st.set_page_config(layout="wide", page_title="Titan V49 Pro")
     st.title("🔱 Titan V49 Pro: Sektörel Tarama")
-
-    # Titan'ı başlat
+    
     titan = TitanV49Pro()
-
+    
     if st.sidebar.button("🚀 230 HİSSEYİ TARAMAYA BAŞLAT"):
-        # 1. Verileri İndir
-        with st.spinner("BİST verileri Yahoo'dan çekiliyor..."):
+        with st.spinner("Veriler çekiliyor..."):
             all_data = robust_yf_download(MUHURLU_KATILIM_230)
-
-        if not all_data:
-            st.error("Veri indirilemedi. Lütfen bağlantınızı veya Yahoo limitlerini kontrol edin.")
-            return
-
-        # 2. Analiz Et
-        results = []
-        progress = st.progress(0)
-        
-        for idx, (ticker, df) in enumerate(all_data.items()):
-            if len(df) > 30:  # Minimum veri kontrolü
+            
+        if all_data:
+            results = []
+            p_bar = st.progress(0)
+            for idx, (ticker, df) in enumerate(all_data.items()):
                 try:
-                    analysis = titan.sector_optimized_scoring(df, ticker)
-                    analysis["Ticker"] = ticker
-                    results.append(analysis)
+                    res = titan.sector_optimized_scoring(df, ticker)
+                    res["Ticker"] = ticker
+                    results.append(res)
                 except:
                     continue
-            progress.progress((idx + 1) / len(all_data))
-
-        # 3. Sonuçları Göster
-        if results:
-            final_df = pd.DataFrame(results).sort_values("al_score", ascending=False)
+                p_bar.progress((idx + 1) / len(all_data))
             
-            # Üst Özet
-            c1, c2, c3 = st.columns(3)
-            c1.metric("Taranan Hisse", len(all_data))
-            c2.metric("Sinyal Üretilen", len(results))
-            c3.metric("En Yüksek Skor", f"{final_df['al_score'].max()} pts")
-
-            st.divider()
-            st.subheader("📋 Detaylı Analiz Sonuçları")
-            st.dataframe(final_df, use_container_width=True)
-        else:
-            st.warning("Tarama bitti ancak kriterlere uygun sonuç bulunamadı.")
+            if results:
+                st.subheader("📊 Analiz Sonuçları")
+                st.dataframe(pd.DataFrame(results).sort_values("al_score", ascending=False), use_container_width=True)
+            else:
+                st.warning("Uygun sonuç bulunamadı.")
 
 if __name__ == "__main__":
-         run_app()
+    run_app()
