@@ -6,44 +6,52 @@ import plotly.express as px
 from plotly.subplots import make_subplots
 import yfinance as yf
 import time
-from datetime import datetime
-from typing import Dict, List, Tuple
+from typing import Dict, List
 import warnings
 
 warnings.filterwarnings('ignore')
 
-# 🔥 MÜHÜRLÜ 230 BIST KATILIM LİSTESİ (örnek 230 – kendi XKTUM listenle genişlet)
+# 🔥 230 BİST KATILIM LİSTESİ (senin XKTUM 230 listesini buraya koy,
+# şu an ilk 60–70 örnek; 230’den 200’lü bileşenlere genişlet)
 MUHURLU_KATILIM_230 = [
-    "ACSEL.IS", "AHSGY.IS", "AKFYE.IS", "AKHAN.IS", "AKSA.IS", "AKYHO.IS", "ALBRK.IS", "ALCTL.IS",
-    "ALKA.IS", "ALKIM.IS", "ALKLC.IS", "ALTNY.IS", "ALVES.IS", "ANGEN.IS", "ARASE.IS", "ARDYZ.IS",
-    "ARFYE.IS", "ASELS.IS", "ATAKP.IS", "ATATP.IS", "AVPGY.IS", "AYEN.IS", "BAHKM.IS", "BAKAB.IS",
-    "BANVT.IS", "BASGZ.IS", "BEGYO.IS", "BERA.IS", "BESTE.IS", "BIENY.IS", "BIMAS.IS", "BINBN.IS",
-    "BINHO.IS", "BMSTL.IS", "BNTAS.IS", "BORSK.IS", "BOSSA.IS", "BRISA.IS", "BRKSN.IS", "BRLSM.IS",
-    "BSOKE.IS", "BURCE.IS", "BURVA.IS", "CANTE.IS", "CATES.IS", "CELHA.IS", "CEMTS.IS", "CEMZY.IS",
-    "CIMSA.IS", "CMBTN.IS", "COSMO.IS", "CVKMD.IS", "CWENE.IS", "DAPGM.IS", "DARDL.IS", "DCTTR.IS",
-    "DENGE.IS", "DESPC.IS", "DGATE.IS", "DGNMO.IS", "DMSAS.IS", "DOFER.IS", "DOFRB.IS", "DOGUB.IS",
-    "DYOBY.IS", "EBEBK.IS", "EDATA.IS", "EDIP.IS", "EFOR.IS", "EGEPO.IS", "EGGUB.IS", "EGPRO.IS",
-    "EKGYO.IS", "EKSUN.IS", "ELITE.IS", "EMPAE.IS", "ENJSA.IS", "EREGL.IS", "ESCOM.IS", "EUPWR.IS",
-    "EYGYO.IS", "FADE.IS", "FONET.IS", "FORMT.IS", "FORTE.IS", "FRMPL.IS", "FZLGY.IS", "GEDZA.IS",
-    "GENIL.IS", "GENTS.IS", "GEREL.IS", "GESAN.IS", "GLRMK.IS", "GOKNR.IS", "GOLTS.IS", "GOODY.IS",
-    "GRSEL.IS", "GRTHO.IS", "GUBRF.IS", "GUNDG.IS", "HATSN.IS", "HKTM.IS", "HOROZ.IS", "HRKET.IS",
-    "IDGYO.IS", "IHEVA.IS", "IHLAS.IS", "IHLGM.IS", "IHYAY.IS", "IMASM.IS", "INTEM.IS", "ISDMR.IS",
-    "ISSEN.IS", "IZFAS.IS", "IZINV.IS", "JANTS.IS", "KARSN.IS", "KATMR.IS", "KBORU.IS", "KCAER.IS",
-    "KIMMR.IS", "KLSYN.IS", "KNFRT.IS", "KOCMT.IS", "KONKA.IS", "KONTR.IS", "KONYA.IS", "KOPOL.IS",
-    "KOTON.IS", "KRDMA.IS", "KRDMB.IS", "KRDMD.IS", "KRGYO.IS", "KRONT.IS", "KRPLS.IS", "KRSTL.IS",
-    "KRVGD.IS", "KTLEV.IS", "KUTPO.IS", "KUYAS.IS", "KZBGY.IS", "LKMNH.IS", "LMKDC.IS", "LOGO.IS",
-    "MAGEN.IS", "MAKIM.IS", "MARBL.IS", "MAVI.IS", "MEDTR.IS", "MEKAG.IS", "MERCN.IS", "MEYSU.IS",
-    "MNDRS.IS", "MNDTR.IS", "MOBTL.IS", "MPARK.IS", "NETAS.IS", "NTGAZ.IS", "OBAMS.IS", "OBASE.IS",
-    "OFSYM.IS", "ONCSM.IS", "ORGE.IS", "OSTIM.IS", "OZRDN.IS", "OZYSR.IS", "PAGYO.IS", "PARSN.IS",
-    "PASEU.IS", "PENGD.IS", "PENTA.IS", "PETKM.IS", "PETUN.IS", "PKART.IS", "PLTUR.IS", "PNLSN.IS",
-    "POLHO.IS", "QUAGR.IS", "RGYAS.IS", "RNPOL.IS", "RODRG.IS", "RUBNS.IS", "SAFKR.IS", "SAMAT.IS",
-    "SANEL.IS", "SANKO.IS", "SARKY.IS", "SAYAS.IS", "SEKUR.IS", "SELEC.IS", "SELVA.IS", "SILVR.IS",
-    "SMART.IS", "SMRTG.IS", "SNGYO.IS", "SNICA.IS", "SOKE.IS", "SRVGY.IS", "SUNTK.IS", "SURGY.IS",
-    "SUWEN.IS", "TARKM.IS", "TDGYO.IS", "TEZOL.IS", "TKNSA.IS", "TMSN.IS", "TNZTP.IS", "TUCLK.IS",
-    "TUKAS.IS", "TUPRS.IS", "TUREX.IS", "UCAYM.IS", "ULAS.IS", "ULUSE.IS", "USAK.IS", "VAKKO.IS",
-    "VANGD.IS", "VESBE.IS", "VRGYO.IS", "YATAS.IS", "YEOTK.IS", "YUNSA.IS", "ZEDUR.IS", "ZERGY.IS",
-    "AGROT.IS", "ALFAS.IS", "ENERY.IS", "KMPUR.IS",
-    # 200–230 arası XKTUM hisseleri kendi listene ekle
+    "ACSEL.IS", "AHSGY.IS", "AKFYE.IS", "AKHAN.IS", "AKSA.IS", "AKYHO.IS",
+    "ALBRK.IS", "ALCTL.IS", "ALKA.IS", "ALKIM.IS", "ALKLC.IS", "ALTNY.IS",
+    "ALVES.IS", "ANGEN.IS", "ARASE.IS", "ARDYZ.IS", "ARFYE.IS", "ASELS.IS",
+    "ATAKP.IS", "ATATP.IS", "AVPGY.IS", "AYEN.IS", "BAHKM.IS", "BAKAB.IS",
+    "BANVT.IS", "BASGZ.IS", "BEGYO.IS", "BERA.IS", "BESTE.IS", "BIENY.IS",
+    "BIMAS.IS", "BINBN.IS", "BINHO.IS", "BMSTL.IS", "BNTAS.IS", "BORSK.IS",
+    "BOSSA.IS", "BRISA.IS", "BRKSN.IS", "BRLSM.IS", "BSOKE.IS", "BURCE.IS",
+    "BURVA.IS", "CANTE.IS", "CATES.IS", "CELHA.IS", "CEMTS.IS", "CEMZY.IS",
+    "CIMSA.IS", "CMBTN.IS", "COSMO.IS", "CVKMD.IS", "CWENE.IS", "DAPGM.IS",
+    "DARDL.IS", "DCTTR.IS", "DENGE.IS", "DESPC.IS", "DGATE.IS", "DGNMO.IS",
+    "DMSAS.IS", "DOFER.IS", "DOFRB.IS", "DOGUB.IS", "DYOBY.IS", "EBEBK.IS",
+    "EDATA.IS", "EDIP.IS", "EFOR.IS", "EGEPO.IS", "EGGUB.IS", "EGPRO.IS",
+    "EKGYO.IS", "EKSUN.IS", "ELITE.IS", "EMPAE.IS", "ENJSA.IS", "EREGL.IS",
+    "ESCOM.IS", "EUPWR.IS", "EYGYO.IS", "FADE.IS", "FONET.IS", "FORMT.IS",
+    "FORTE.IS", "FRMPL.IS", "FZLGY.IS", "GEDZA.IS", "GENIL.IS", "GENTS.IS",
+    "GEREL.IS", "GESAN.IS", "GLRMK.IS", "GOKNR.IS", "GOLTS.IS", "GOODY.IS",
+    "GRSEL.IS", "GRTHO.IS", "GUBRF.IS", "GUNDG.IS", "HATSN.IS", "HKTM.IS",
+    "HOROZ.IS", "HRKET.IS", "IDGYO.IS", "IHEVA.IS", "IHLAS.IS", "IHLGM.IS",
+    "IHYAY.IS", "IMASM.IS", "INTEM.IS", "ISDMR.IS", "ISSEN.IS", "IZFAS.IS",
+    "IZINV.IS", "JANTS.IS", "KARSN.IS", "KATMR.IS", "KBORU.IS", "KCAER.IS",
+    "KIMMR.IS", "KLSYN.IS", "KNFRT.IS", "KOCMT.IS", "KONKA.IS", "KONTR.IS",
+    "KONYA.IS", "KOPOL.IS", "KOTON.IS", "KRDMA.IS", "KRDMB.IS", "KRDMD.IS",
+    "KRGYO.IS", "KRONT.IS", "KRPLS.IS", "KRSTL.IS", "KRVGD.IS", "KTLEV.IS",
+    "KUTPO.IS", "KUYAS.IS", "KZBGY.IS", "LKMNH.IS", "LMKDC.IS", "LOGO.IS",
+    "MAGEN.IS", "MAKIM.IS", "MARBL.IS", "MAVI.IS", "MEDTR.IS", "MEKAG.IS",
+    "MERCN.IS", "MEYSU.IS", "MNDRS.IS", "MNDTR.IS", "MOBTL.IS", "MPARK.IS",
+    "NETAS.IS", "NTGAZ.IS", "OBAMS.IS", "OBASE.IS", "OFSYM.IS", "ONCSM.IS",
+    "ORGE.IS", "OSTIM.IS", "OZRDN.IS", "OZYSR.IS", "PAGYO.IS", "PARSN.IS",
+    "PASEU.IS", "PENGD.IS", "PENTA.IS", "PETKM.IS", "PETUN.IS", "PKART.IS",
+    "PLTUR.IS", "PNLSN.IS", "POLHO.IS", "QUAGR.IS", "RGYAS.IS", "RNPOL.IS",
+    "RODRG.IS", "RUBNS.IS", "SAFKR.IS", "SAMAT.IS", "SANEL.IS", "SANKO.IS",
+    "SARKY.IS", "SAYAS.IS", "SEKUR.IS", "SELEC.IS", "SELVA.IS", "SILVR.IS",
+    "SMART.IS", "SMRTG.IS", "SNGYO.IS", "SNICA.IS", "SOKE.IS", "SRVGY.IS",
+    "SUNTK.IS", "SURGY.IS", "SUWEN.IS", "TARKM.IS", "TDGYO.IS", "TEZOL.IS",
+    "TKNSA.IS", "TMSN.IS", "TNZTP.IS", "TUCLK.IS", "TUKAS.IS", "TUPRS.IS",
+    "TUREX.IS", "UCAYM.IS", "ULAS.IS", "ULUSE.IS", "USAK.IS", "VAKKO.IS",
+    "VANGD.IS", "VESBE.IS", "VRGYO.IS", "YATAS.IS", "YEOTK.IS", "YUNSA.IS",
+    "ZEDUR.IS", "ZERGY.IS", "AGROT.IS", "ALFAS.IS", "ENERY.IS", "KMPUR.IS",
 ]
 
 # SEKTÖREL HARİTA (XKTUM’da ki bileşenleri ile senin güncel listene göre)
@@ -55,7 +63,7 @@ SEKTOR_MAP = {
     "XHOLD": ["KCHOL.IS", "SAHOL.IS"],
 }
 
-# SEKTÖREL PARAMETRELER (ileride grid search ile kalibre etmek için)
+# SEKTÖREL PARAMETRELER (ileride grid search ile kalibre edilebilir)
 SEKTOR_PARAMS = {
     "XSIN": {"RSI_BAND": (32, 58), "RVOL_MULT": 1.4, "ATR_MULT": 2.2},
     "XELAS": {"RSI_BAND": (38, 52), "RVOL_MULT": 1.6, "ATR_MULT": 1.8},
@@ -64,12 +72,7 @@ SEKTOR_PARAMS = {
     "XHOLD": {"RSI_BAND": (33, 57), "RVOL_MULT": 1.5, "ATR_MULT": 2.1},
 }
 
-st.set_page_config(page_title="Titan V49 - 230 BIST SİSTEMİ", layout="wide")
-st.title("🔱 Titan V49: 230 BİST KATILIM – Order Flow + Risk Yönetimi")
-
-# =========================== YFINANCE RATE LIMITLI BATCH DOWNLOAD =========================
-from yfinance import YFRateLimitError
-import yfinance as yf
+# ============================ YFINANCE RATE LIMITLI BATCH DOWNLOAD (GENEL EXCEPT) =========================
 
 def robust_yf_download(
     tickers: List[str], period: str = "2y", interval: str = "1d",
@@ -96,39 +99,41 @@ def robust_yf_download(
                     progress=False,
                 )
                 cols = ["Open", "High", "Low", "Close", "Volume"]
+                # Yahoo çoklu ticker formatı: MultiIndex
                 for t in chunk:
                     if isinstance(raw.columns, pd.MultiIndex):
-                        df = raw[t].dropna(how="all").copy()
+                        df = raw[t].dropna(how="all")
                     else:
-                        df = raw[[t]].dropna(how="all").copy()
-                    df.columns = cols
+                        df = raw[[t]].dropna(how="all")
+                        if 0 < len(df.columns) < 2:
+                            df = df.rename(columns={df.columns[0]: t})
+                    df = df.iloc[:, :5] if 5 <= len(df.columns) else df
+                    df = df.rename(columns={"Open": "Open", "High": "High", "Low": "Low", "Close": "Close", "Volume": "Volume"})
                     results[t] = df
                     downloaded += 1
-                break
-            except YFRateLimitError as e:
-                print(f"Rate limit hit: {e}")
-                time.sleep(wait_seconds * 2)
-                continue
+                break  # başarılıysa retry’i kır
+
             except Exception as e:
-                print(f"Download failed for chunk: {e}")
+                st.write(f"Chunk için indirme hatası: {e}")
                 time.sleep(wait_seconds)
                 failed_tickers.extend(chunk)
                 continue
 
-        # Alternatif: Ticker bazında düşüşe in
+        # Hata almış ticker’ları bireysel deneme (Ticker bazında)
         for t in failed_tickers:
             for _ in range(2):
                 try:
                     tkr = yf.Ticker(t, session=session)
                     df = tkr.history(period=period, interval=interval, auto_adjust=True)
                     df = df.dropna(how="all")
-                    df.columns = ["Open", "High", "Low", "Close", "Volume"]
+                    df = df[["Open", "High", "Low", "Close", "Volume"]]
                     results[t] = df
                     downloaded += 1
                     break
                 except Exception as e:
+                    st.write(f"Ticker için indirme hatası: {t} → {e}")
                     time.sleep(2)
-    print(f"Download completed: {downloaded}/{len(tickers)}")
+    st.write(f"230 BİST indirme bitti: {downloaded}/{len(tickers)}")
     return results
 
 # ============================= PORTFÖY VE BACKTEST ENGINE ===============================
@@ -140,7 +145,13 @@ class Portfolio:
         self.equity = []     # [{"date", "value", "drawdown"}]
 
     def add_trade(self, ticker: str, qty: int, price: float, side: str, timestamp):
-        sign = 1 if side == "buy" else -1
+        if side == "buy":
+            sign = 1
+        elif side == "sell":
+            sign = -1
+        else:
+            return
+
         cost = sign * qty * price * 1.001  # 0.1% komisyon
         self.cash -= cost
 
@@ -200,22 +211,27 @@ class TitanV49Pro:
 
     def order_flow_analysis(self, df: pd.DataFrame) -> Dict:
         window = 14
+        # Rolling VWAP (14 gün)
         rolling_vwap = (
             (df["Close"] * df["Volume"]).rolling(window=window).sum() /
             df["Volume"].rolling(window=window).sum()
         )
         vwap = rolling_vwap.shift(1)
+        # Delta (sadece son 10 bar)
         vwap_delta = np.where(df["Close"] > vwap, df["Volume"], -df["Volume"])
         net_delta = pd.Series(vwap_delta).tail(10).sum()
 
+        # Absorption: 5 bar
         body_size = (df["Close"] - df["Open"]).abs().rolling(5).mean()
         avg_volume = df["Volume"].rolling(5).mean()
         absorption_ratio = avg_volume / (body_size * 1000 + 1e-6)
 
+        # Volume divergence: 10 bar vs 20 bar
         price_trend = (df["Close"].iloc[-1] / df["Close"].iloc[-10] - 1)
         vol_trend = df["Volume"].tail(10).mean() / max(df["Volume"].tail(20).mean(), 1e-6)
         vol_divergence = vol_trend > 1.2 and price_trend > 0
 
+        # Order flow score
         base_score = 15
         if vol_divergence and absorption_ratio.iloc[-1] > 1.5:
             base_score = 30
@@ -236,6 +252,19 @@ class TitanV49Pro:
         avg_loss = pd.Series(loss).rolling(period).mean()
         rs = avg_gain / avg_loss.replace(0, 1e-6)
         return 100 - 100 / (1 + rs)
+
+    def calculate_atr(self, df: pd.DataFrame, period=14):
+        tr1 = df["High"] - df["Low"]
+        tr2 = (df["High"] - df["Close"].shift()).abs()
+        tr3 = (df["Low"] - df["Close"].shift()).abs()
+        tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+        return tr.rolling(period).mean().iloc[-1]
+
+    def sector_optimized_scoring(self, df: pd.DataFrame, ticker: str) -> Dict:
+        sektor = next((k for k, v in SEKTOR_MAP.items() if ticker in v), "XSIN")
+        params = SEKTOR_PARAMS.get(sektor, SEKTOR_PARAMS["XSIN"])
+        rsi_band = params["RSI_BAND"]
+        rsi_data = self
 
     def calculate_atr(self, df: pd.DataFrame, period=14):
         tr1 = df["High"] - df["Low"]
