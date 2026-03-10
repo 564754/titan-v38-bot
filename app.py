@@ -256,5 +256,5 @@ def run_app():
         else:
             st.warning("Tarama bitti ancak kriterlere uygun sonuç bulunamadı.")
 
-       if __name__ == "__main__":
+if __name__ == "__main__":
          run_app()
