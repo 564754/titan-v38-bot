@@ -104,7 +104,7 @@ def robust_yf_download(
                             downloaded += 1
                     except:
                         failed_tickers.append(t)
-                break
+        break
                     except Exception as e:
                         if attempt == max_retries - 1:
                             failed_tickers.extend(chunk)  # <-- Bu satır 'if'den tam 4 boşluk içeride olmalı
